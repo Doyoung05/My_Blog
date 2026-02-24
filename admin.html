@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 페이지 - 글 쓰기</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --text-color: #1f2937;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --border-color: #d1d5db;
+        }
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .admin-container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--bg-color);
+            padding-bottom: 1rem;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .back-link {
+            text-decoration: none;
+            color: var(--primary-color);
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        textarea {
+            height: 400px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn-submit {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-submit:hover {
+            background-color: #1d4ed8;
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <h1>새 글 작성</h1>
+            <a href="index.html" class="back-link">← 블로그로 돌아가기</a>
+        </header>
+
+        <form id="post-form">
+            <div class="form-group">
+                <label for="title">제목</label>
+                <input type="text" id="title" placeholder="글 제목을 입력하세요" required>
+            </div>
+
+            <div class="form-group">
+                <label for="content">내용 (Markdown 지원)</label>
+                <textarea id="content" placeholder="마크다운 형식으로 내용을 작성하세요..." required></textarea>
+                <p class="hint">TIP: # 제목, **강조**, [링크](url) 등을 사용할 수 있습니다.</p>
+            </div>
+
+            <button type="submit" class="btn-submit">발행하기</button>
+        </form>
+    </div>
+
+    <script>
+        // 여기에 Cloudflare Worker URL을 입력하세요.
+        const WORKER_URL = 'YOUR_CLOUDFLARE_WORKER_URL';
+
+        document.getElementById('post-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const titleInput = document.getElementById('title');
+            const contentInput = document.getElementById('content');
+            const submitBtn = e.target.querySelector('.btn-submit');
+
+            const title = titleInput.value;
+            const content = contentInput.value;
+
+            if (WORKER_URL === 'YOUR_CLOUDFLARE_WORKER_URL') {
+                alert('Cloudflare Worker URL이 설정되지 않았습니다. admin.html 파일 내부의 WORKER_URL을 수정해주세요.');
+                return;
+            }
+
+            try {
+                // 버튼 비활성화 (중복 클릭 방지)
+                submitBtn.disabled = true;
+                submitBtn.textContent = '발행 중...';
+
+                const response = await fetch(WORKER_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ title, content }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert('글이 성공적으로 GitHub에 저장되었습니다!');
+                    // 폼 초기화
+                    titleInput.value = '';
+                    contentInput.value = '';
+                } else {
+                    throw new Error(result.error || '발행 중 오류가 발생했습니다.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('실패: ' + error.message);
+            } finally {
+                // 버튼 복구
+                submitBtn.disabled = false;
+                submitBtn.textContent = '발행하기';
+            }
+        });
+    </script>
+</body>
+</html>
